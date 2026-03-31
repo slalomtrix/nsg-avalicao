@@ -503,7 +503,7 @@ select option { background: var(--nsg-navy); color: var(--nsg-white); }
   <div id="page-form" class="page active">
     <div class="page-title-bar">
       <h2>Avaliação de desempenho</h2>
-      <p>3º Trimestre 2025 · Preencha como colaborador, gestor ou avaliação de liderança</p>
+      <p>1º Trimestre 2026 · Preencha como colaborador, gestor ou avaliação de liderança</p>
       <div class="gold-line"></div>
     </div>
 
@@ -602,7 +602,7 @@ select option { background: var(--nsg-navy); color: var(--nsg-white); }
       </div>
       <div class="collab-header">
         <h3 id="dash-collab-name">—</h3>
-        <p id="dash-collab-sub">Consolidado 3T25</p>
+        <p id="dash-collab-sub">Consolidado 1T26</p>
       </div>
       <div class="dash-grid">
         <div class="metric highlight"><div class="metric-label">Média geral</div><div class="metric-val" id="d-media">—</div><div class="metric-sub">Todas as dimensões</div></div>
@@ -711,7 +711,7 @@ async function submitForm() {
   btn.textContent = 'Salvando...';
 
   const { error } = await sb.from('avaliacoes').insert({
-    trimestre: '3T25', colaborador: collab, avaliador, papel: currentRole, scores,
+    trimestre: '1T26', colaborador: collab, avaliador, papel: currentRole, scores,
     pdi_fortes: document.getElementById('pdi-fortes').value,
     pdi_melhoria: document.getElementById('pdi-melhoria').value,
     pdi_acoes: document.getElementById('pdi-acoes').value,
