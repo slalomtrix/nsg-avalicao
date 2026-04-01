@@ -987,25 +987,26 @@ function showPage(page, btn) {
   }
 }
 
-Object.entries(CRITERIOS).forEach(([sec, keys]) => buildRows(`rows-${sec}`, keys));
+document.addEventListener('DOMContentLoaded', function() {
 
-// Estrelas para perguntas especiais
-['prontidao','seguranca'].forEach(id => {
-  const el = document.getElementById(`stars-${id}`);
-  if(!el) return;
-  for(let i=1;i<=5;i++){
-    const s = document.createElement('div');
-    s.className = 'star';
-    s.textContent = i;
-    s.onclick = () => {
-      el.querySelectorAll('.star').forEach((st,idx) => st.classList.toggle('filled', idx < i));
-    };
-    el.appendChild(s);
-  }
-});
+  Object.entries(CRITERIOS).forEach(([sec, keys]) => buildRows(`rows-${sec}`, keys));
 
-// Detecta papel via URL (?papel=auto | gestor | sub)
-(function() {
+  // Estrelas para perguntas especiais
+  ['prontidao','seguranca'].forEach(id => {
+    const el = document.getElementById(`stars-${id}`);
+    if(!el) return;
+    for(let i=1;i<=5;i++){
+      const s = document.createElement('div');
+      s.className = 'star';
+      s.textContent = i;
+      s.onclick = () => {
+        el.querySelectorAll('.star').forEach((st,idx) => st.classList.toggle('filled', idx < i));
+      };
+      el.appendChild(s);
+    }
+  });
+
+  // Detecta papel via URL (?papel=auto | gestor | sub)
   const params = new URLSearchParams(window.location.search);
   const papel = params.get('papel');
   const subtitles = {
@@ -1020,7 +1021,8 @@ Object.entries(CRITERIOS).forEach(([sec, keys]) => buildRows(`rows-${sec}`, keys
   } else {
     setRole('auto');
   }
-})();
+
+});
 </script>
 </body>
 </html>
