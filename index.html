@@ -549,6 +549,35 @@ select option { background: var(--nsg-navy); color: var(--nsg-white); }
       <div id="rows-lideranca"></div>
     </div>
 
+    <!-- Pergunta exclusiva: gestor avalia prontidão -->
+    <div class="card" id="sec-prontidao" style="display:none">
+      <div class="section-label">Potencial e desenvolvimento</div>
+      <div class="criteria-row">
+        <div class="criteria-name">Nível de prontidão para assumir mais responsabilidades</div>
+        <div class="stars" id="stars-prontidao"></div>
+      </div>
+      <div style="font-size:11px;color:var(--nsg-text-muted);margin-top:4px;font-weight:300">1 = Não está pronto · 3 = Em desenvolvimento · 5 = Totalmente pronto</div>
+    </div>
+
+    <!-- Pergunta exclusiva: autoavaliação — o que a empresa pode melhorar -->
+    <div class="card" id="sec-empresa" style="display:none">
+      <div class="section-label">Sua visão sobre a NSG</div>
+      <div class="field-row" style="margin:0">
+        <label class="field-label">O que a NSG poderia fazer diferente para te ajudar a performar melhor?</label>
+        <textarea id="empresa-melhoria" placeholder="Seja honesto — essa resposta é fundamental para o crescimento da empresa..."></textarea>
+      </div>
+    </div>
+
+    <!-- Pergunta exclusiva: liderança — segurança psicológica -->
+    <div class="card" id="sec-seguranca" style="display:none">
+      <div class="section-label">Clima e segurança</div>
+      <div class="criteria-row">
+        <div class="criteria-name">Você se sente à vontade para trazer problemas e ideias para seu líder?</div>
+        <div class="stars" id="stars-seguranca"></div>
+      </div>
+      <div style="font-size:11px;color:var(--nsg-text-muted);margin-top:4px;font-weight:300">1 = Não me sinto confortável · 3 = Em alguns casos · 5 = Sempre me sinto seguro</div>
+    </div>
+
     <div class="card">
       <div class="section-label">Desenvolvimento — PDI</div>
       <div class="field-row">
@@ -656,6 +685,9 @@ function setRole(role) {
   currentRole = role;
   document.querySelectorAll('.role-btn').forEach((b,i) => b.classList.toggle('active', ['auto','gestor','sub'][i] === role));
   document.getElementById('sec-lideranca').style.display = role === 'sub' ? 'block' : 'none';
+  document.getElementById('sec-prontidao').style.display = role === 'gestor' ? 'block' : 'none';
+  document.getElementById('sec-empresa').style.display = role === 'auto' ? 'block' : 'none';
+  document.getElementById('sec-seguranca').style.display = role === 'sub' ? 'block' : 'none';
   const labels = { auto: 'Seu nome', gestor: 'Nome do gestor', sub: 'Nome do avaliador' };
   document.getElementById('avaliador-label').textContent = labels[role];
 }
@@ -717,7 +749,10 @@ async function submitForm() {
     pdi_acoes: document.getElementById('pdi-acoes').value,
     qual_bem: document.getElementById('qual-bem').value,
     qual_mudar: document.getElementById('qual-mudar').value,
-    qual_proximo: document.getElementById('qual-proximo').value
+    qual_proximo: document.getElementById('qual-proximo').value,
+    prontidao: currentRole === 'gestor' ? (document.querySelectorAll('#stars-prontidao .star.filled').length || null) : null,
+    empresa_melhoria: currentRole === 'auto' ? document.getElementById('empresa-melhoria').value : null,
+    seguranca_psicologica: currentRole === 'sub' ? (document.querySelectorAll('#stars-seguranca .star.filled').length || null) : null
   });
 
   btn.disabled = false;
@@ -728,7 +763,7 @@ async function submitForm() {
 }
 
 function resetForm() {
-  ['collab-name','avaliador-name','pdi-fortes','pdi-melhoria','pdi-acoes','qual-bem','qual-mudar','qual-proximo'].forEach(id => { const el=document.getElementById(id); if(el) el.value=''; });
+  ['collab-name','avaliador-name','pdi-fortes','pdi-melhoria','pdi-acoes','qual-bem','qual-mudar','qual-proximo','empresa-melhoria'].forEach(id => { const el=document.getElementById(id); if(el) el.value=''; });
   document.querySelectorAll('.star.filled').forEach(s => s.classList.remove('filled'));
 }
 
@@ -849,6 +884,21 @@ function showPage(page, btn) {
 }
 
 Object.entries(CRITERIOS).forEach(([sec, keys]) => buildRows(`rows-${sec}`, keys));
+
+// Estrelas para perguntas especiais
+['prontidao','seguranca'].forEach(id => {
+  const el = document.getElementById(`stars-${id}`);
+  if(!el) return;
+  for(let i=1;i<=5;i++){
+    const s = document.createElement('div');
+    s.className = 'star';
+    s.textContent = i;
+    s.onclick = () => {
+      el.querySelectorAll('.star').forEach((st,idx) => st.classList.toggle('filled', idx < i));
+    };
+    el.appendChild(s);
+  }
+});
 </script>
 </body>
 </html>
