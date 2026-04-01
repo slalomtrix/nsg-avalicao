@@ -286,6 +286,12 @@ textarea:focus, input[type=text]:focus, select:focus {
 }
 select option { background: var(--nsg-navy); color: var(--nsg-white); }
 .id-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 12px; }
+.name-grid { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 4px; }
+.name-chip { padding: 8px 14px; border-radius: 20px; border: 1px solid rgba(255,255,255,0.12); background: rgba(255,255,255,0.04); font-size: 13px; color: rgba(255,255,255,0.75); cursor: pointer; transition: all .15s; font-family: inherit; font-weight: 300; white-space: nowrap; }
+.name-chip:hover { border-color: var(--nsg-gold); color: var(--nsg-gold-light); }
+.name-chip.selected { background: var(--nsg-gold); border-color: var(--nsg-gold); color: var(--nsg-navy); font-weight: 600; }
+.name-chip.disabled { opacity: 0.35; cursor: not-allowed; text-decoration: line-through; }
+.name-chip.disabled:hover { border-color: rgba(255,255,255,0.12); color: rgba(255,255,255,0.35); }
 
 /* SUBMIT */
 .submit-btn {
@@ -515,17 +521,17 @@ select option { background: var(--nsg-navy); color: var(--nsg-white); }
       <button class="role-btn" onclick="setRole('sub')">Avaliação da liderança</button>
     </div>
 
-    <div class="card card-gold">
+    <div class="card card-gold" id="card-identificacao">
       <div class="section-label">Identificação</div>
-      <div class="id-grid">
-        <div class="field-row" style="margin:0">
-          <label class="field-label">Nome do colaborador avaliado</label>
-          <input type="text" id="collab-name" placeholder="Ex: Rafael Sanches" />
-        </div>
-        <div class="field-row" style="margin:0">
-          <label class="field-label" id="avaliador-label">Seu nome</label>
-          <input type="text" id="avaliador-name" placeholder="Quem está preenchendo" />
-        </div>
+      <div class="field-row" style="margin-bottom:16px">
+        <label class="field-label" id="avaliador-label">Seu nome</label>
+        <div class="name-grid" id="avaliador-grid"></div>
+        <input type="hidden" id="avaliador-name" />
+      </div>
+      <div id="collab-picker-wrap">
+        <label class="field-label" id="collab-label">Colaborador avaliado</label>
+        <div class="name-grid" id="collab-grid"></div>
+        <input type="hidden" id="collab-name" />
       </div>
     </div>
 
@@ -670,6 +676,9 @@ const SUPABASE_URL = 'https://cxszzajzyctuvssbjjtv.supabase.co';
 const SUPABASE_KEY = 'sb_publishable_rXwnOipJ9VGlNbZyALVdiQ_Aqsqnrfu';
 const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
+const COLABORADORES = ['Rafael Sanches','Felipe Nader','Leonardo Torquato','Victor Roberto','Lotário Neto','David Bordonale','Luciana Soares','Eduardo Alves'];
+const LIDERES = ['Sergio Belem Teixeira'];
+
 const CRITERIOS = {
   profissional: ['Cumprimento de prazos','Qualidade do trabalho','Gestão de tempo','Habilidade de resolução de problemas','Conhecimento técnico'],
   compromisso: ['Comunicação','Colaboração','Relacionamento com líderes','Adaptabilidade','Proatividade'],
@@ -680,6 +689,91 @@ const CRITERIOS = {
 let currentRole = 'auto';
 let allEvaluations = [];
 let radarChart = null;
+let answeredKeys = JSON.parse(localStorage.getItem('nsg_answered') || '{}');
+
+function saveAnswered(collab, avaliador, papel) {
+  const key = `${papel}__${avaliador}__${collab}`;
+  answeredKeys[key] = true;
+  localStorage.setItem('nsg_answered', JSON.stringify(answeredKeys));
+}
+
+function hasAnswered(collab, avaliador, papel) {
+  return !!answeredKeys[`${papel}__${avaliador}__${collab}`];
+}
+
+function buildNameChips(gridId, names, hiddenId, otherGridId, otherHiddenId) {
+  const grid = document.getElementById(gridId);
+  grid.innerHTML = '';
+  names.forEach(name => {
+    const chip = document.createElement('button');
+    chip.type = 'button';
+    chip.className = 'name-chip';
+    chip.textContent = name;
+    chip.onclick = () => {
+      grid.querySelectorAll('.name-chip').forEach(c => c.classList.remove('selected'));
+      chip.classList.add('selected');
+      document.getElementById(hiddenId).value = name;
+      // Refresh other grid disabled states if exists
+      if(otherGridId) refreshDisabled(otherGridId, otherHiddenId, hiddenId, gridId);
+      refreshDisabled(gridId, hiddenId, otherHiddenId, otherGridId);
+    };
+    grid.appendChild(chip);
+  });
+}
+
+function refreshDisabled(gridId, hiddenId, otherHiddenId, otherGridId) {
+  const avaliador = document.getElementById('avaliador-name').value;
+  const collab = document.getElementById('collab-name').value;
+  const grid = document.getElementById(gridId);
+  if(!grid) return;
+  grid.querySelectorAll('.name-chip').forEach(chip => {
+    const thisName = chip.textContent;
+    let checkCollab = collab, checkAvaliador = avaliador;
+    if(hiddenId === 'avaliador-name') checkAvaliador = thisName;
+    else checkCollab = thisName;
+    const done = checkCollab && checkAvaliador && hasAnswered(checkCollab, checkAvaliador, currentRole);
+    chip.classList.toggle('disabled', done);
+    chip.title = done ? 'Esta avaliação já foi respondida' : '';
+  });
+}
+
+function setRole(role) {
+  currentRole = role;
+  document.querySelectorAll('.role-btn').forEach((b,i) => b.classList.toggle('active', ['auto','gestor','sub'][i] === role));
+  document.getElementById('sec-lideranca').style.display = role === 'sub' ? 'block' : 'none';
+  document.getElementById('sec-prontidao').style.display = role === 'gestor' ? 'block' : 'none';
+  document.getElementById('sec-empresa').style.display = role === 'auto' ? 'block' : 'none';
+  document.getElementById('sec-seguranca').style.display = role === 'sub' ? 'block' : 'none';
+
+  const labels = { auto: 'Seu nome', gestor: 'Nome do gestor', sub: 'Seu nome' };
+  document.getElementById('avaliador-label').textContent = labels[role];
+
+  // Limpa seleções anteriores
+  document.getElementById('avaliador-name').value = '';
+  document.getElementById('collab-name').value = '';
+
+  if(role === 'sub') {
+    // Sub: avaliador = colaborador, collab = líder (fixo)
+    buildNameChips('avaliador-grid', COLABORADORES, 'avaliador-name', null, null);
+    document.getElementById('collab-picker-wrap').style.display = 'none';
+    document.getElementById('collab-name').value = LIDERES[0];
+    document.getElementById('collab-label') && (document.getElementById('collab-label').textContent = '');
+  } else if(role === 'gestor') {
+    // Gestor: avaliador = gestor (líder), collab = colaborador
+    buildNameChips('avaliador-grid', LIDERES, 'avaliador-name', 'collab-grid', 'collab-name');
+    document.getElementById('collab-picker-wrap').style.display = 'block';
+    document.getElementById('collab-label').textContent = 'Colaborador avaliado';
+    buildNameChips('collab-grid', COLABORADORES, 'collab-name', 'avaliador-grid', 'avaliador-name');
+  } else {
+    // Auto: avaliador = colaborador avaliando a si mesmo
+    buildNameChips('avaliador-grid', COLABORADORES, 'avaliador-name', null, null);
+    document.getElementById('collab-picker-wrap').style.display = 'none';
+    document.getElementById('collab-name').value = '';
+    // collab = mesmo nome do avaliador
+    document.getElementById('avaliador-grid').querySelectorAll && (() => {})();
+  }
+  refreshDisabled('avaliador-grid', 'avaliador-name', 'collab-name', 'collab-grid');
+}
 
 function setRole(role) {
   currentRole = role;
@@ -729,9 +823,15 @@ function showToast(msg, type='success') {
 }
 
 async function submitForm() {
-  const collab = document.getElementById('collab-name').value.trim();
+  let collab = document.getElementById('collab-name').value.trim();
   const avaliador = document.getElementById('avaliador-name').value.trim();
-  if(!collab || !avaliador) { showToast('Preencha o nome do colaborador e do avaliador.', 'error'); return; }
+
+  // Na autoavaliação, collab = próprio avaliador
+  if(currentRole === 'auto') collab = avaliador;
+
+  if(!avaliador) { showToast('Selecione seu nome antes de continuar.', 'error'); return; }
+  if(!collab) { showToast('Selecione o colaborador avaliado.', 'error'); return; }
+  if(hasAnswered(collab, avaliador, currentRole)) { showToast('Esta avaliação já foi respondida por você.', 'error'); return; }
 
   const scores = {};
   const allKeys = [...CRITERIOS.profissional,...CRITERIOS.compromisso,...CRITERIOS.cultura];
@@ -758,13 +858,17 @@ async function submitForm() {
   btn.disabled = false;
   btn.textContent = 'Registrar avaliação';
   if(error) { showToast('Erro ao salvar: ' + error.message, 'error'); return; }
+
+  saveAnswered(collab, avaliador, currentRole);
   showToast('Avaliação registrada com sucesso!');
   resetForm();
 }
 
 function resetForm() {
-  ['collab-name','avaliador-name','pdi-fortes','pdi-melhoria','pdi-acoes','qual-bem','qual-mudar','qual-proximo','empresa-melhoria'].forEach(id => { const el=document.getElementById(id); if(el) el.value=''; });
+  ['pdi-fortes','pdi-melhoria','pdi-acoes','qual-bem','qual-mudar','qual-proximo','empresa-melhoria'].forEach(id => { const el=document.getElementById(id); if(el) el.value=''; });
   document.querySelectorAll('.star.filled').forEach(s => s.classList.remove('filled'));
+  // Refresh chips to mark newly answered as disabled
+  setRole(currentRole);
 }
 
 async function loadDashboard() {
@@ -904,17 +1008,17 @@ Object.entries(CRITERIOS).forEach(([sec, keys]) => buildRows(`rows-${sec}`, keys
 (function() {
   const params = new URLSearchParams(window.location.search);
   const papel = params.get('papel');
+  const subtitles = {
+    auto: '1º Trimestre 2026 · Autoavaliação',
+    gestor: '1º Trimestre 2026 · Avaliação do gestor',
+    sub: '1º Trimestre 2026 · Avaliação da liderança'
+  };
   if(papel && ['auto','gestor','sub'].includes(papel)) {
     setRole(papel);
-    // Esconde o seletor de papel — usuário já chegou pelo link certo
     document.querySelector('.role-selector').style.display = 'none';
-    // Atualiza subtítulo da página
-    const subtitles = {
-      auto: '1º Trimestre 2026 · Autoavaliação',
-      gestor: '1º Trimestre 2026 · Avaliação do gestor',
-      sub: '1º Trimestre 2026 · Avaliação da liderança'
-    };
     document.querySelector('.page-title-bar p').textContent = subtitles[papel];
+  } else {
+    setRole('auto');
   }
 })();
 </script>
