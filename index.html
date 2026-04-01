@@ -899,6 +899,24 @@ Object.entries(CRITERIOS).forEach(([sec, keys]) => buildRows(`rows-${sec}`, keys
     el.appendChild(s);
   }
 });
+
+// Detecta papel via URL (?papel=auto | gestor | sub)
+(function() {
+  const params = new URLSearchParams(window.location.search);
+  const papel = params.get('papel');
+  if(papel && ['auto','gestor','sub'].includes(papel)) {
+    setRole(papel);
+    // Esconde o seletor de papel — usuário já chegou pelo link certo
+    document.querySelector('.role-selector').style.display = 'none';
+    // Atualiza subtítulo da página
+    const subtitles = {
+      auto: '1º Trimestre 2026 · Autoavaliação',
+      gestor: '1º Trimestre 2026 · Avaliação do gestor',
+      sub: '1º Trimestre 2026 · Avaliação da liderança'
+    };
+    document.querySelector('.page-title-bar p').textContent = subtitles[papel];
+  }
+})();
 </script>
 </body>
 </html>
