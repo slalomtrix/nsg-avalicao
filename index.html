@@ -775,17 +775,6 @@ function setRole(role) {
   refreshDisabled('avaliador-grid', 'avaliador-name', 'collab-name', 'collab-grid');
 }
 
-function setRole(role) {
-  currentRole = role;
-  document.querySelectorAll('.role-btn').forEach((b,i) => b.classList.toggle('active', ['auto','gestor','sub'][i] === role));
-  document.getElementById('sec-lideranca').style.display = role === 'sub' ? 'block' : 'none';
-  document.getElementById('sec-prontidao').style.display = role === 'gestor' ? 'block' : 'none';
-  document.getElementById('sec-empresa').style.display = role === 'auto' ? 'block' : 'none';
-  document.getElementById('sec-seguranca').style.display = role === 'sub' ? 'block' : 'none';
-  const labels = { auto: 'Seu nome', gestor: 'Nome do gestor', sub: 'Nome do avaliador' };
-  document.getElementById('avaliador-label').textContent = labels[role];
-}
-
 function buildRows(containerId, keys) {
   const c = document.getElementById(containerId);
   c.innerHTML = '';
